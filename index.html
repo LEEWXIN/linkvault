@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LinkVault — Save Once, Find Always</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #7c6aff;
+    --accent2: #ff6ab0;
+    --accent3: #6affca;
+    --text: #e8e8f0;
+    --text2: #8888aa;
+    --text3: #555570;
+    --danger: #ff4f6a;
+    --warn: #ffb347;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,106,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,106,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Header */
+  header {
+    padding: 48px 0 32px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+
+  .logo-group h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .logo-group p {
+    font-size: 0.72rem;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .stats-bar {
+    display: flex;
+    gap: 20px;
+  }
+
+  .stat {
+    text-align: right;
+  }
+
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .stat-label {
+    font-size: 0.65rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Add form */
+  .add-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .add-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 20px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  input[type="text"], input[type="url"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    padding: 12px 16px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+
+  input[type="text"]:focus, input[type="url"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,106,255,0.12);
+  }
+
+  input::placeholder { color: var(--text3); }
+
+  .btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 12px 22px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #9b6fff);
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(124,106,255,0.35);
+  }
+
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text2);
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-danger-ghost {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text3);
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .btn-danger-ghost:hover {
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+
+  /* Tags input */
+  .tags-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 6px;
+  }
+
+  .tag-chip {
+    background: rgba(124,106,255,0.15);
+    border: 1px solid rgba(124,106,255,0.3);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .tag-chip:hover {
+    background: rgba(124,106,255,0.25);
+  }
+
+  .tag-chip .remove-tag {
+    opacity: 0.6;
+    font-size: 0.85rem;
+  }
+
+  .tag-chip .remove-tag:hover { opacity: 1; }
+
+  /* Duplicate warning */
+  .duplicate-warning {
+    display: none;
+    background: rgba(255,79,106,0.08);
+    border: 1px solid rgba(255,79,106,0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 0.78rem;
+    color: var(--danger);
+    margin-top: 12px;
+    animation: slideIn 0.2s ease;
+  }
+
+  .duplicate-warning.show { display: flex; align-items: center; gap: 10px; }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .search-wrap {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3);
+    font-size: 0.85rem;
+    pointer-events: none;
+  }
+
+  .search-wrap input {
+    padding-left: 38px;
+  }
+
+  .filter-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .filter-tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .filter-tag.active, .filter-tag:hover {
+    background: rgba(124,106,255,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Sort / count row */
+  .list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-size: 0.72rem;
+    color: var(--text3);
+  }
+
+  /* Link cards */
+  .links-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .link-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    transition: all 0.2s;
+    animation: cardIn 0.25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .link-card:hover {
+    border-color: rgba(124,106,255,0.35);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    transform: translateY(-1px);
+  }
+
+  .link-favicon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .link-favicon img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
+
+  .link-body { flex: 1; min-width: 0; }
+
+  .link-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .link-url {
+    font-size: 0.72rem;
+    color: var(--text3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 8px;
+  }
+
+  .link-url a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .link-url a:hover { color: var(--accent); }
+
+  .link-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .link-tag {
+    background: rgba(106,255,202,0.1);
+    border: 1px solid rgba(106,255,202,0.2);
+    color: var(--accent3);
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 5px;
+    letter-spacing: 0.05em;
+  }
+
+  .link-date {
+    font-size: 0.65rem;
+    color: var(--text3);
+    margin-left: auto;
+  }
+
+  .link-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .link-card:hover .link-actions { opacity: 1; }
+
+  .action-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: all 0.15s;
+  }
+
+  .action-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .action-btn.del:hover { color: var(--danger); border-color: var(--danger); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--text3);
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    opacity: 0.4;
+  }
+
+  .empty-state h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    color: var(--text2);
+    margin-bottom: 8px;
+  }
+
+  .empty-state p {
+    font-size: 0.78rem;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  .toast-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 0.78rem;
+    color: var(--text);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    animation: toastIn 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toast-item.success { border-color: rgba(106,255,202,0.3); }
+  .toast-item.error   { border-color: rgba(255,79,106,0.3); }
+  .toast-item.warn    { border-color: rgba(255,179,71,0.3); }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Note field */
+  .note-text {
+    font-size: 0.72rem;
+    color: var(--text2);
+    margin-top: 4px;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Responsive */
+  @media (max-width: 580px) {
+    header { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .stats-bar { flex-direction: row; }
+    .input-row { flex-direction: column; }
+    .btn-primary { width: 100%; justify-content: center; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo-group">
+      <h1>LinkVault</h1>
+      <p>Save Once, Find Always</p>
+    </div>
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="stat-num" id="totalCount">0</div>
+        <div class="stat-label">Links</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="tagCount">0</div>
+        <div class="stat-label">Tags</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Add Link Form -->
+  <div class="add-section">
+    <div class="section-title">＋ Add New Link</div>
+
+    <div class="input-row">
+      <input type="url" id="urlInput" placeholder="https://example.com" />
+      <input type="text" id="titleInput" placeholder="Title (optional)" style="flex:0.6" />
+    </div>
+
+    <div class="input-row">
+      <input type="text" id="noteInput" placeholder="Note (optional, e.g. 'found on Twitter')" />
+    </div>
+
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:4px;">
+      <input type="text" id="tagInput" placeholder="Add tag (press Enter)" style="flex:1" />
+      <button class="btn btn-primary" onclick="addLink()">Save Link</button>
+    </div>
+
+    <div class="tags-row" id="pendingTags"></div>
+
+    <div class="duplicate-warning" id="dupWarning">
+      <span>⚠️</span>
+      <span id="dupMessage">You already saved this link!</span>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="searchInput" placeholder="Search title, URL, tag, note..." oninput="renderLinks()" />
+    </div>
+  </div>
+
+  <div class="filter-tags" id="filterTags" style="margin-bottom:20px;"></div>
+
+  <div class="list-header">
+    <span id="listCount">All links</span>
+    <span id="sortLabel" style="cursor:pointer;" onclick="toggleSort()">↓ Newest first</span>
+  </div>
+
+  <!-- Links List -->
+  <div class="links-grid" id="linksGrid"></div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let links = JSON.parse(localStorage.getItem('linkvault_links') || '[]');
+let pendingTags = [];
+let activeFilter = null;
+let sortAsc = false;
+
+// ─────────────────────────────────────────────
+// TAG INPUT
+// ─────────────────────────────────────────────
+document.getElementById('tagInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim().toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff\-_]/g, '');
+    if (val && !pendingTags.includes(val)) {
+      pendingTags.push(val);
+      renderPendingTags();
+    }
+    e.target.value = '';
+  }
+});
+
+function renderPendingTags() {
+  const c = document.getElementById('pendingTags');
+  c.innerHTML = pendingTags.map((t, i) =>
+    `<span class="tag-chip">#${t} <span class="remove-tag" onclick="removeTag(${i})">✕</span></span>`
+  ).join('');
+}
+
+function removeTag(i) {
+  pendingTags.splice(i, 1);
+  renderPendingTags();
+}
+
+// ─────────────────────────────────────────────
+// DUPLICATE CHECK (live)
+// ─────────────────────────────────────────────
+document.getElementById('urlInput').addEventListener('input', function() {
+  checkDuplicate(this.value.trim());
+});
+
+function normalizeUrl(url) {
+  try {
+    const u = new URL(url);
+    return (u.hostname + u.pathname).replace(/\/$/, '').toLowerCase();
+  } catch { return url.toLowerCase().trim(); }
+}
+
+function checkDuplicate(url) {
+  const warn = document.getElementById('dupWarning');
+  const msg  = document.getElementById('dupMessage');
+  if (!url) { warn.classList.remove('show'); return; }
+  const norm = normalizeUrl(url);
+  const dupe = links.find(l => normalizeUrl(l.url) === norm);
+  if (dupe) {
+    msg.textContent = `⚠ You already saved "${dupe.title || dupe.url}" on ${formatDate(dupe.savedAt)}`;
+    warn.classList.add('show');
+  } else {
+    warn.classList.remove('show');
+  }
+}
+
+// ─────────────────────────────────────────────
+// ADD LINK
+// ─────────────────────────────────────────────
+function addLink() {
+  const urlRaw   = document.getElementById('urlInput').value.trim();
+  const title    = document.getElementById('titleInput').value.trim();
+  const note     = document.getElementById('noteInput').value.trim();
+
+  if (!urlRaw) { toast('Please enter a URL', 'error'); return; }
+
+  let url = urlRaw;
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+  // Strict duplicate check on save
+  const norm = normalizeUrl(url);
+  const dupe = links.find(l => normalizeUrl(l.url) === norm);
+  if (dupe) {
+    toast(`Already saved as "${dupe.title || 'this link'}"`, 'warn');
+    return;
+  }
+
+  const hostname = (() => { try { return new URL(url).hostname; } catch { return ''; } })();
+
+  const link = {
+    id: Date.now().toString(),
+    url,
+    title: title || hostname || url,
+    note,
+    tags: [...pendingTags],
+    favicon: hostname ? `https://www.google.com/s2/favicons?domain=${hostname}&sz=32` : '',
+    savedAt: new Date().toISOString()
+  };
+
+  links.unshift(link);
+  save();
+
+  // Reset form
+  document.getElementById('urlInput').value = '';
+  document.getElementById('titleInput').value = '';
+  document.getElementById('noteInput').value = '';
+  document.getElementById('tagInput').value = '';
+  document.getElementById('dupWarning').classList.remove('show');
+  pendingTags = [];
+  renderPendingTags();
+
+  toast('Link saved! 🔗', 'success');
+  renderLinks();
+  renderFilterTags();
+  updateStats();
+}
+
+// ─────────────────────────────────────────────
+// DELETE
+// ─────────────────────────────────────────────
+function deleteLink(id) {
+  links = links.filter(l => l.id !== id);
+  save();
+  renderLinks();
+  renderFilterTags();
+  updateStats();
+  toast('Deleted.', 'error');
+}
+
+// ─────────────────────────────────────────────
+// RENDER LINKS
+// ─────────────────────────────────────────────
+function renderLinks() {
+  const query = document.getElementById('searchInput').value.toLowerCase();
+  const grid  = document.getElementById('linksGrid');
+
+  let filtered = links.filter(l => {
+    const inSearch = !query ||
+      l.title.toLowerCase().includes(query) ||
+      l.url.toLowerCase().includes(query) ||
+      (l.note || '').toLowerCase().includes(query) ||
+      l.tags.some(t => t.includes(query));
+    const inFilter = !activeFilter || l.tags.includes(activeFilter);
+    return inSearch && inFilter;
+  });
+
+  if (sortAsc) filtered = [...filtered].reverse();
+
+  document.getElementById('listCount').textContent =
+    filtered.length === links.length
+      ? `${links.length} link${links.length !== 1 ? 's' : ''}`
+      : `${filtered.length} of ${links.length} links`;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = links.length === 0
+      ? `<div class="empty-state">
+          <div class="empty-icon">🔗</div>
+          <h3>Your vault is empty</h3>
+          <p>Paste a URL above to get started</p>
+         </div>`
+      : `<div class="empty-state">
+          <div class="empty-icon">🔍</div>
+          <h3>No results found</h3>
+          <p>Try a different keyword or tag</p>
+         </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(l => {
+    const tagsHtml = l.tags.map(t =>
+      `<span class="link-tag" style="cursor:pointer" onclick="setFilter('${t}')">#${t}</span>`
+    ).join('');
+
+    const faviconHtml = l.favicon
+      ? `<img src="${l.favicon}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><span style="display:none;align-items:center;justify-content:center;font-size:1rem;">🔗</span>`
+      : `<span style="font-size:1rem;">🔗</span>`;
+
+    return `
+    <div class="link-card" id="card-${l.id}">
+      <div class="link-favicon">${faviconHtml}</div>
+      <div class="link-body">
+        <div class="link-title" title="${escHtml(l.title)}">${escHtml(l.title)}</div>
+        <div class="link-url"><a href="${escHtml(l.url)}" target="_blank" rel="noopener">${escHtml(l.url)}</a></div>
+        ${l.note ? `<div class="note-text">${escHtml(l.note)}</div>` : ''}
+        <div class="link-meta">
+          ${tagsHtml}
+          <span class="link-date">${formatDate(l.savedAt)}</span>
+        </div>
+      </div>
+      <div class="link-actions">
+        <button class="action-btn" onclick="window.open('${escHtml(l.url)}','_blank')" title="Open">↗</button>
+        <button class="action-btn" onclick="copyLink('${l.id}')" title="Copy URL">⎘</button>
+        <button class="action-btn del" onclick="deleteLink('${l.id}')" title="Delete">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+// FILTER TAGS
+// ─────────────────────────────────────────────
+function renderFilterTags() {
+  const allTags = [...new Set(links.flatMap(l => l.tags))].sort();
+  const c = document.getElementById('filterTags');
+  if (allTags.length === 0) { c.innerHTML = ''; return; }
+
+  c.innerHTML = `
+    <span class="filter-tag ${!activeFilter ? 'active' : ''}" onclick="setFilter(null)">All</span>
+    ${allTags.map(t =>
+      `<span class="filter-tag ${activeFilter === t ? 'active' : ''}" onclick="setFilter('${t}')">#${t}</span>`
+    ).join('')}`;
+}
+
+function setFilter(tag) {
+  activeFilter = tag;
+  renderFilterTags();
+  renderLinks();
+}
+
+// ─────────────────────────────────────────────
+// SORT
+// ─────────────────────────────────────────────
+function toggleSort() {
+  sortAsc = !sortAsc;
+  document.getElementById('sortLabel').textContent = sortAsc ? '↑ Oldest first' : '↓ Newest first';
+  renderLinks();
+}
+
+// ─────────────────────────────────────────────
+// COPY
+// ─────────────────────────────────────────────
+function copyLink(id) {
+  const link = links.find(l => l.id === id);
+  if (!link) return;
+  navigator.clipboard.writeText(link.url).then(() => toast('URL copied!', 'success'));
+}
+
+// ─────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────
+function save() {
+  localStorage.setItem('linkvault_links', JSON.stringify(links));
+}
+
+function updateStats() {
+  document.getElementById('totalCount').textContent = links.length;
+  const allTags = new Set(links.flatMap(l => l.tags));
+  document.getElementById('tagCount').textContent = allTags.size;
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-MY', { day:'numeric', month:'short', year:'numeric' });
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function toast(msg, type = 'success') {
+  const c = document.getElementById('toast');
+  const icons = { success: '✓', error: '✕', warn: '⚠' };
+  const el = document.createElement('div');
+  el.className = `toast-item ${type}`;
+  el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+  c.appendChild(el);
+  setTimeout(() => el.style.opacity = '0', 2200);
+  setTimeout(() => el.remove(), 2500);
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+renderLinks();
+renderFilterTags();
+updateStats();
+</script>
+</body>
+</html>
