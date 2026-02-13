@@ -546,17 +546,25 @@
       <h1>LinkVault</h1>
       <p>Save Once, Find Always</p>
     </div>
-    <div class="stats-bar">
-      <div class="stat">
-        <div class="stat-num" id="totalCount">0</div>
-        <div class="stat-label">Links</div>
+    <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+      <div class="stats-bar">
+        <div class="stat">
+          <div class="stat-num" id="totalCount">0</div>
+          <div class="stat-label">Links</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="tagCount">0</div>
+          <div class="stat-label">Tags</div>
+        </div>
       </div>
-      <div class="stat">
-        <div class="stat-num" id="tagCount">0</div>
-        <div class="stat-label">Tags</div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-ghost" onclick="importJSON()" title="Load links from a JSON file">⬆ Import</button>
+        <button class="btn btn-ghost" onclick="exportJSON()" title="Save all links as JSON file">⬇ Export</button>
       </div>
     </div>
   </header>
+  <!-- Hidden file input for import -->
+  <input type="file" id="fileImport" accept=".json" style="display:none" onchange="handleFileImport(event)" />
 
   <!-- Add Link Form -->
   <div class="add-section">
@@ -610,7 +618,7 @@
 // ─────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────
-let links = JSON.parse(localStorage.getItem('linkvault_links') || '[]');
+let links = []; // Data lives in JSON files only — use Import/Export buttons
 let pendingTags = [];
 let activeFilter = null;
 let sortAsc = false;
@@ -716,6 +724,7 @@ function addLink() {
   renderPendingTags();
 
   toast('Link saved! 🔗', 'success');
+  markUnsaved();
   renderLinks();
   renderFilterTags();
   updateStats();
@@ -731,6 +740,7 @@ function deleteLink(id) {
   renderFilterTags();
   updateStats();
   toast('Deleted.', 'error');
+  markUnsaved();
 }
 
 // ─────────────────────────────────────────────
@@ -842,11 +852,111 @@ function copyLink(id) {
 }
 
 // ─────────────────────────────────────────────
-// HELPERS
+// EXPORT — download links as JSON file
 // ─────────────────────────────────────────────
 function save() {
-  localStorage.setItem('linkvault_links', JSON.stringify(links));
+  // no-op: data only persists via explicit export
 }
+
+function exportJSON() {
+  if (links.length === 0) { toast('Nothing to export yet!', 'warn'); return; }
+  const blob = new Blob([JSON.stringify(links, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  a.href     = url;
+  a.download = `linkvault-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast(`Exported ${links.length} links ⬇`, 'success');
+  clearUnsaved();
+}
+
+// ─────────────────────────────────────────────
+// IMPORT — load links from a JSON file
+// ─────────────────────────────────────────────
+function importJSON() {
+  document.getElementById('fileImport').click();
+}
+
+function handleFileImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data)) throw new Error('Not an array');
+
+      // Merge: skip duplicates already in current session
+      let added = 0, skipped = 0;
+      data.forEach(item => {
+        if (!item.url) return;
+        const norm = normalizeUrl(item.url);
+        const exists = links.find(l => normalizeUrl(l.url) === norm);
+        if (exists) { skipped++; return; }
+        links.push({
+          id:      item.id || Date.now().toString() + Math.random(),
+          url:     item.url,
+          title:   item.title || item.url,
+          note:    item.note || '',
+          tags:    Array.isArray(item.tags) ? item.tags : [],
+          favicon: item.favicon || '',
+          savedAt: item.savedAt || new Date().toISOString()
+        });
+        added++;
+      });
+
+      // Sort newest first after import
+      links.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+
+      renderLinks();
+      renderFilterTags();
+      updateStats();
+      toast(`Imported ${added} links${skipped ? `, skipped ${skipped} dupes` : ''} ✓`, 'success');
+    } catch {
+      toast('Invalid JSON file', 'error');
+    }
+    // Reset so same file can be re-imported if needed
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ─────────────────────────────────────────────
+// UNSAVED INDICATOR
+// ─────────────────────────────────────────────
+let hasUnsaved = false;
+
+function markUnsaved() {
+  if (links.length === 0) return;
+  hasUnsaved = true;
+  const btn = document.querySelector('[onclick="exportJSON()"]');
+  if (btn && !btn.dataset.pulsing) {
+    btn.dataset.pulsing = '1';
+    btn.style.borderColor = 'var(--accent3)';
+    btn.style.color = 'var(--accent3)';
+    btn.textContent = '⬇ Export *';
+  }
+}
+
+function clearUnsaved() {
+  hasUnsaved = false;
+  const btn = document.querySelector('[onclick="exportJSON()"]');
+  if (btn) {
+    delete btn.dataset.pulsing;
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    btn.textContent = '⬇ Export';
+  }
+}
+
+window.addEventListener('beforeunload', e => {
+  if (hasUnsaved) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 
 function updateStats() {
   document.getElementById('totalCount').textContent = links.length;
